@@ -1,14 +1,33 @@
 # UX Analyst AI
 
-An AI-powered UX analysis tool that provides instant expert-level feedback on website design and usability. Built with Google Gemini AI, Puppeteer, and React.
+An AI-powered UX analysis tool that provides comprehensive website analysis with actionable recommendations and implementation code generation.
 
 ## Features
 
-- **AI-Powered UX Critique**: Expert-level feedback using Google Gemini AI with vision capabilities
-- **Accessibility Scanning**: WCAG compliance checking with axe-core
-- **Multi-Device Analysis**: Screenshots and analysis across desktop, tablet, and mobile viewports
-- **Comprehensive Reports**: Detailed, actionable recommendations with priority scoring
-- **Real-time Analysis**: Live progress tracking and results
+### 🎯 **Comprehensive UX Analysis**
+- Multi-viewport screenshot capture (desktop, tablet, mobile)
+- Visual design analysis with color, layout, and typography insights
+- AI-powered UX critique with actionable recommendations
+- Accessibility compliance checking
+- Performance and usability scoring
+
+### 💻 **Implementation Ready**
+- Generates HTML, CSS, JavaScript code for recommended improvements
+- Step-by-step implementation guides
+- Copy-paste ready code snippets
+- Framework-agnostic solutions
+
+### 🚀 **Multiple Interfaces**
+- **Web Interface**: Full-featured dashboard with real-time progress
+- **Command Line Tool**: Perfect for CI/CD integration and automation
+- **MCP Server**: Natural language UX analysis with Claude and other LLMs
+- **Programmatic API**: Integrate into your own tools and workflows
+
+### ⚙️ **Developer Friendly**
+- Circuit breaker pattern for fault tolerance
+- Browser pool management for resource efficiency
+- Dependency injection architecture
+- Comprehensive error handling and logging
 
 ## Tech Stack
 
@@ -29,104 +48,292 @@ An AI-powered UX analysis tool that provides instant expert-level feedback on we
 
 ### Prerequisites
 
-1. **Node.js 18+** - Required for both backend and frontend
-2. **Google Gemini API Key** - Get one from [Google AI Studio](https://makersuite.google.com/app/apikey)
+1. **Node.js 18+** and npm
+2. **Google Gemini API Key** - Get one from [Google AI Studio](https://aistudio.google.com/)
 
-### Development Setup
+### Installation & Setup
 
-1. **Clone and Install**
-   ```bash
-   git clone <repository-url>
-   cd ux-analyst-ai
-   npm run install:all
-   ```
+```bash
+# Clone the repository
+git clone https://github.com/grzetich/eyeson.git
+cd eyeson/ux-analyst-ai
 
-2. **Environment Configuration**
-   ```bash
-   cp .env.example .env
-   # Edit .env and add your Gemini API key
-   ```
+# Install dependencies for all components
+npm run install:all
 
-3. **Start Development**
-   ```bash
-   npm run dev
-   ```
+# Set up your API key
+export GEMINI_API_KEY="your-api-key-here"
+# Or create a .env file in the backend directory
+echo "GEMINI_API_KEY=your-api-key-here" > backend/.env
+```
 
-   This starts both the backend (port 3000) and frontend (port 5173) concurrently.
+## Usage Options
 
-4. **Open Browser**
-   - Frontend: http://localhost:5173
-   - Backend API: http://localhost:3000/api/health
+### 1. Command Line Interface (Recommended for CI/CD)
 
-### Production Deployment
+```bash
+# Install CLI globally
+cd cli && npm link
 
-#### Option 1: Docker (Recommended)
+# Basic analysis
+ux-analyze https://example.com
 
-1. **Build Frontend**
-   ```bash
-   cd frontend && npm run build && cd ..
-   ```
+# Quick analysis with code generation
+ux-analyze https://example.com --quick --code --accessibility
 
-2. **Set Environment Variables**
-   ```bash
-   export GEMINI_API_KEY=your_api_key_here
-   ```
+# Interactive mode with guided prompts
+ux-analyze interactive
 
-3. **Run with Docker Compose**
-   ```bash
-   docker-compose up -d
-   ```
+# Custom output format and location
+ux-analyze https://example.com --format html --output ./my-analysis
 
-   Or with nginx proxy:
-   ```bash
-   docker-compose --profile with-proxy up -d
-   ```
+# CI/CD friendly JSON output
+ux-analyze https://example.com --format json --quick
+```
 
-#### Option 2: Manual Deployment
+#### CLI Options
+- `-o, --output <dir>` - Output directory (default: `./ux-analysis`)
+- `-f, --format <format>` - Output format: `json`, `html`, `markdown` (default: `json`)
+- `-v, --viewports <list>` - Comma-separated viewports (default: `desktop,tablet,mobile`)
+- `--quick` - Run quick analysis (faster, less detailed)
+- `--code` - Generate implementation code
+- `--accessibility` - Include accessibility analysis
+- `--api-key <key>` - Gemini API key (or set `GEMINI_API_KEY` env var)
 
-1. **Build Frontend**
-   ```bash
-   cd frontend && npm run build && cd ..
-   ```
+### 2. Web Interface
 
-2. **Set Environment Variables**
-   ```bash
-   export NODE_ENV=production
-   export GEMINI_API_KEY=your_api_key_here
-   export PORT=3000
-   ```
+```bash
+# Start the backend server
+cd backend && npm run dev
 
-3. **Start Backend**
-   ```bash
-   cd backend && npm start
-   ```
+# Start the frontend (in another terminal)
+cd frontend && npm run dev
+
+# Open http://localhost:3000 in your browser
+```
+
+### 3. Programmatic Usage
+
+```javascript
+const { UXAnalyzer } = require('./cli/lib/UXAnalyzer');
+
+const analyzer = new UXAnalyzer({
+  ai: { geminiApiKey: process.env.GEMINI_API_KEY }
+});
+
+const result = await analyzer.analyze('https://example.com', {
+  viewports: ['desktop', 'mobile'],
+  includeCodeGeneration: true,
+  includeAccessibility: true
+});
+
+console.log('UX Score:', result.report.summary.uxScore);
+console.log('Implementation Code:', result.implementationCode);
+```
+
+### 4. MCP Server (Natural Language Interface)
+
+The MCP server allows you to use natural language with Claude and other LLMs to analyze websites.
+
+#### Setup
+```bash
+# Configure Claude Desktop
+# Add to ~/.config/claude/claude_desktop_config.json (Linux/Mac)
+# or %APPDATA%/Claude/claude_desktop_config.json (Windows)
+
+{
+  "mcpServers": {
+    "ux-analyst": {
+      "command": "node",
+      "args": ["/path/to/ux-analyst-ai/mcp-server/index.js"],
+      "env": {
+        "UX_BACKEND_URL": "http://localhost:3005"
+      }
+    }
+  }
+}
+```
+
+#### Usage
+Just ask Claude naturally:
+
+```
+"Please analyze the UX of https://example.com"
+
+"Can you do a comprehensive UX analysis including accessibility?"
+
+"Show me the screenshots from the mobile viewport"
+
+"What implementation code do you recommend for the UX issues?"
+```
+
+#### Benefits
+- **Natural conversation**: No command syntax to remember
+- **Progressive updates**: Claude monitors progress and explains what's happening
+- **Visual analysis**: Claude can see and discuss the actual screenshots
+- **Intelligent presentation**: Results formatted based on your specific questions
+- **Code explanations**: Claude explains generated code and why it works
+
+## Integration Examples
+
+### NPM Scripts
+
+Add to your `package.json`:
+
+```json
+{
+  "scripts": {
+    "ux:check": "ux-analyze http://localhost:3000 --quick",
+    "ux:full": "ux-analyze http://localhost:3000 --code --accessibility --format html",
+    "ux:mobile": "ux-analyze http://localhost:3000 --viewports mobile --quick",
+    "ux:ci": "ux-analyze $UX_TARGET_URL --format json --quick --output ./ux-reports"
+  }
+}
+```
+
+### GitHub Actions CI/CD
+
+```yaml
+name: UX Analysis
+
+on:
+  pull_request:
+    branches: [ main ]
+  push:
+    branches: [ main ]
+
+jobs:
+  ux-analysis:
+    runs-on: ubuntu-latest
+    steps:
+    - uses: actions/checkout@v3
+
+    - name: Setup Node.js
+      uses: actions/setup-node@v3
+      with:
+        node-version: '18'
+
+    - name: Install UX Analyzer
+      run: |
+        cd ux-analyst-ai/cli
+        npm install
+        npm link
+
+    - name: Run UX Analysis
+      env:
+        GEMINI_API_KEY: ${{ secrets.GEMINI_API_KEY }}
+      run: |
+        ux-analyze https://your-staging-site.com \
+          --format json \
+          --output ./ux-reports \
+          --quick \
+          --accessibility
+
+    - name: Upload UX Reports
+      uses: actions/upload-artifact@v3
+      with:
+        name: ux-analysis-reports
+        path: ./ux-reports/
+```
+
+### Pre-commit Hook
+
+```bash
+#!/bin/bash
+# .git/hooks/pre-commit
+
+echo "Running UX analysis..."
+npm run ux:check
+
+if [ $? -ne 0 ]; then
+  echo "❌ UX analysis failed. Please review and fix issues before committing."
+  exit 1
+fi
+
+echo "✅ UX analysis passed!"
+```
+
+## Architecture
+
+### Backend Services
+- **AnalysisService**: Core analysis orchestration
+- **ScreenshotService**: Multi-viewport screenshot capture with browser pooling
+- **AICritiqueService**: AI-powered UX evaluation using Google Gemini
+- **VisualDesignAnalyzer**: Color, layout, and typography analysis
+- **CodeGenerationService**: AI-powered implementation code generation
+
+### Frontend Components
+- **React Dashboard**: Real-time analysis progress and results
+- **AnalysisForm**: URL input and configuration
+- **ProgressTracker**: Live analysis status updates
+- **ResultsViewer**: Interactive report display
+- **CodeImplementationSection**: Generated code display with copy/download
+
+### CLI Tool
+- **Commander.js**: Robust CLI argument parsing
+- **Interactive Mode**: Guided prompts with inquirer
+- **Progress Tracking**: Real-time spinners and status updates
+- **Multiple Output Formats**: JSON, HTML, Markdown support
+
+### MCP Server
+- **Model Context Protocol**: Standard interface for LLM tool integration
+- **Natural Language Interface**: Conversational UX analysis with Claude
+- **Progressive Updates**: Real-time progress monitoring and explanations
+- **Visual Content Support**: Screenshots and images for LLM analysis
 
 ## Configuration
 
 ### Environment Variables
 
-| Variable | Default | Description |
-|----------|---------|-------------|
-| `GEMINI_API_KEY` | - | **Required.** Your Google Gemini API key |
-| `NODE_ENV` | `development` | Environment mode |
-| `PORT` | `3000` | Server port |
-| `DATABASE_URL` | `sqlite:./data/uxanalyst.db` | Database connection |
-| `SCREENSHOT_STORAGE_PATH` | `./data/screenshots` | Screenshot storage directory |
-| `MAX_CONCURRENT_ANALYSES` | `3` | Maximum concurrent analyses |
-| `ANALYSIS_TIMEOUT_MS` | `300000` | Analysis timeout (5 minutes) |
-| `RATE_LIMIT_MAX_REQUESTS` | `10` | Max requests per window |
-| `RATE_LIMIT_WINDOW_MS` | `900000` | Rate limit window (15 minutes) |
+```bash
+# Required
+GEMINI_API_KEY="your-gemini-api-key"
 
-### Analysis Options
+# Optional
+PORT=3000
+NODE_ENV=development
+```
 
-- **Analysis Types**:
-  - `quick`: Basic UX review (~1 minute)
-  - `comprehensive`: Detailed UX + accessibility (~3 minutes)
+### Configuration File
 
-- **Viewports**:
-  - `desktop`: 1920×1080
-  - `tablet`: 768×1024
-  - `mobile`: 375×667
+Create `ux-config.json`:
+
+```json
+{
+  "ai": {
+    "geminiApiKey": "your-api-key"
+  },
+  "defaults": {
+    "viewports": ["desktop", "tablet", "mobile"],
+    "outputFormat": "html",
+    "includeCode": true,
+    "includeAccessibility": true
+  },
+  "analysis": {
+    "timeoutMs": 300000,
+    "maxConcurrentAnalyses": 3
+  }
+}
+```
+
+Use with: `ux-analyze https://example.com --config ux-config.json`
+
+## Output Formats
+
+### JSON (Machine-readable)
+- Raw analysis data perfect for CI/CD integration
+- Parseable by other tools and scripts
+- Contains all metrics, scores, and recommendations
+
+### HTML (Human-readable)
+- Beautiful visual reports with embedded screenshots
+- Implementation code included with syntax highlighting
+- Shareable analysis results
+
+### Markdown (Documentation-friendly)
+- README-compatible format for documentation
+- Version control friendly
+- Great for team collaboration
 
 ## API Documentation
 

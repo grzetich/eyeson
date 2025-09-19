@@ -4,6 +4,7 @@ import ScreenshotViewer from './ScreenshotViewer'
 import CritiqueSection from './CritiqueSection'
 import AccessibilitySection from './AccessibilitySection'
 import RecommendationsSection from './RecommendationsSection'
+import CodeImplementationSection from './CodeImplementationSection'
 
 function AnalysisResults({ analysis }) {
   const [activeTab, setActiveTab] = useState('overview')
@@ -18,7 +19,8 @@ function AnalysisResults({ analysis }) {
     { id: 'screenshots', label: 'Screenshots', icon: '📱' },
     { id: 'ux', label: 'UX Analysis', icon: '🎨' },
     { id: 'accessibility', label: 'Accessibility', icon: '♿' },
-    { id: 'recommendations', label: 'Recommendations', icon: '💡' }
+    { id: 'recommendations', label: 'Recommendations', icon: '💡' },
+    { id: 'code', label: 'Implementation Code', icon: '💻' }
   ]
 
   const getScoreColor = (score) => {
@@ -239,6 +241,10 @@ function AnalysisResults({ analysis }) {
             accessibility={accessibility}
             report={report}
           />
+        )}
+
+        {activeTab === 'code' && (
+          <CodeImplementationSection analysisId={analysis.id} />
         )}
       </div>
     </div>

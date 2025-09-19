@@ -8,6 +8,7 @@ class AnalysisService {
     this.screenshotService = dependencies.screenshotService;
     this.aiCritiqueService = dependencies.aiCritiqueService;
     this.visualDesignAnalyzer = dependencies.visualDesignAnalyzer;
+    this.codeGenerationService = dependencies.codeGenerationService;
     this.config = dependencies.config;
 
     // Still create accessibility service directly for now
@@ -228,7 +229,26 @@ class AnalysisService {
 
       await this.storeAnalysisResult(analysisId, 'final_report', report);
 
-      // 5. Finalize analysis
+      // 5. Generate implementation code (if requested)
+      if (options.includeCodeGeneration !== false && this.codeGenerationService) {
+        await this.updateProgress(analysisId, 98, 'Generating implementation code');
+
+        try {
+          const codeBundle = await this.codeGenerationService.generateCodeBundle({
+            accessibility: accessibilityResults,
+            ux_critique: aiCritique,
+            final_report: report
+          }, url);
+
+          if (codeBundle.success) {
+            await this.storeAnalysisResult(analysisId, 'implementation_code', codeBundle.bundle);
+          }
+        } catch (codeError) {
+          console.warn('Code generation failed, continuing without code:', codeError.message);
+        }
+      }
+
+      // 6. Finalize analysis
       const duration = Date.now() - startTime;
       await this.finalizeAnalysis(analysisId, duration);
 

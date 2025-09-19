@@ -1,0 +1,35 @@
+{
+  "name": "ux-analyst-cli",
+  "version": "1.0.0",
+  "description": "Command-line interface for UX Analyst AI",
+  "main": "index.js",
+  "bin": {
+    "ux-analyze": "./bin/ux-analyze.js",
+    "ux-analyst": "./bin/ux-analyze.js"
+  },
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "keywords": [
+    "ux",
+    "analysis",
+    "accessibility",
+    "cli",
+    "web",
+    "automation"
+  ],
+  "author": "",
+  "license": "MIT",
+  "dependencies": {
+    "commander": "^11.0.0",
+    "chalk": "^4.1.2",
+    "ora": "^5.4.1",
+    "inquirer": "^8.2.4",
+    "fs-extra": "^11.1.1",
+    "path": "^0.12.7",
+    "dotenv": "^16.3.1"
+  },
+  "engines": {
+    "node": ">=14.0.0"
+  }
+}

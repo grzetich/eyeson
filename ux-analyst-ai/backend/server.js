@@ -15,6 +15,7 @@ const ScreenshotService = require('./services/screenshotService');
 const AICritiqueService = require('./services/aiCritiqueService');
 const VisualDesignAnalyzer = require('./services/visualDesignAnalyzer');
 const AnalysisService = require('./services/analysisService');
+const CodeGenerationService = require('./services/codeGenerationService');
 
 const app = express();
 let config = null;
@@ -162,22 +163,42 @@ async function registerServices() {
     healthCheck: async (service) => service.getHealthStatus()
   });
 
+  // Register CodeGenerationService
+  serviceContainer.register('codeGenerationService', (deps, container) => {
+    return new CodeGenerationService({
+      geminiApiKey: config.ai.geminiApiKey,
+      logger: console
+    });
+  }, {
+    singleton: true,
+    startupPriority: 35,
+    dependencies: [],
+    circuitBreaker: {
+      failureThreshold: 3,
+      recoveryTimeout: 30000,
+      expectedErrors: ['rate limit', '429', '503', 'timeout']
+    },
+    healthCheck: async (service) => service.getHealthStatus()
+  });
+
   // Register AnalysisService (depends on other services)
   serviceContainer.register('analysisService', (deps, container) => {
     const screenshotService = container.get('screenshotService');
     const aiCritiqueService = container.get('aiCritiqueService');
     const visualDesignAnalyzer = container.get('visualDesignAnalyzer');
+    const codeGenerationService = container.get('codeGenerationService');
 
     return new AnalysisService({
       screenshotService,
       aiCritiqueService,
       visualDesignAnalyzer,
+      codeGenerationService,
       config
     });
   }, {
     singleton: true,
     startupPriority: 40,
-    dependencies: ['screenshotService', 'aiCritiqueService', 'visualDesignAnalyzer'],
+    dependencies: ['screenshotService', 'aiCritiqueService', 'visualDesignAnalyzer', 'codeGenerationService'],
     healthCheck: async (service) => service.getHealthStatus ? service.getHealthStatus() : { status: 'healthy' }
   });
 

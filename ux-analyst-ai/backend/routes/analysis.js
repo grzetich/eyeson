@@ -199,6 +199,49 @@ router.get('/:id/screenshots/:viewport', async (req, res) => {
   }
 });
 
+// GET /api/analyze/:id/code - Get generated implementation code
+router.get('/:id/code', async (req, res) => {
+  try {
+    const { id } = req.params;
+    const analysisService = req.services.get('analysisService');
+    const result = await analysisService.getAnalysisResult(id);
+
+    if (!result) {
+      return res.status(404).json({
+        error: 'Analysis not found'
+      });
+    }
+
+    if (result.status !== 'completed') {
+      return res.status(400).json({
+        error: 'Analysis not completed yet'
+      });
+    }
+
+    // Find implementation code in results
+    const implementationCode = result.results.implementation_code;
+
+    if (!implementationCode) {
+      return res.status(404).json({
+        error: 'No implementation code available for this analysis'
+      });
+    }
+
+    res.json({
+      analysisId: id,
+      url: result.url,
+      generatedAt: result.completedAt,
+      code: implementationCode
+    });
+
+  } catch (error) {
+    console.error('Get implementation code error:', error);
+    res.status(500).json({
+      error: 'Failed to retrieve implementation code'
+    });
+  }
+});
+
 // GET /api/analyze - Get active analyses (admin endpoint)
 router.get('/', async (req, res) => {
   try {
