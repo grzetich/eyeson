@@ -202,6 +202,46 @@ ${visualAnalysis ? `
 ${visualAnalysis.combined?.topIssues?.slice(0, 3).map(issue => `- ${issue.description} (${issue.severity} priority) - affects ${issue.affectedViewports?.join(', ')}`).join('\n') || 'None found'}
 ` : 'Visual analysis not available'}
 
+**IMPORTANT: AI Design Anti-Pattern Detection**
+Please specifically check for common signs that this website may have been designed by AI tools and flag any of these issues:
+
+**Visual & Layout Red Flags:**
+- Generic, template-like appearance that looks similar to other modern websites
+- Overly perfect, sterile design lacking human character or brand personality
+- Mechanical spacing and element placement (everything perfectly aligned/centered)
+- Inconsistent visual hierarchy or unclear content flow
+- Over-reliance on stock photography or generic imagery
+- Excessive use of gradients, drop shadows, or trendy effects without purpose
+- Perfect symmetry everywhere (unnatural balance)
+- Homogeneous, "safe" color palettes lacking personality
+
+**Content & Copy Issues:**
+- Buzzword overuse ("innovative", "revolutionary", "cutting-edge", "empower", "solutions")
+- Vague, meaningless copy ("Empowering solutions for your unique needs")
+- Robotic, corporate tone lacking human personality
+- Poor content structure (walls of text or overly fragmented)
+- Generic CTAs ("Learn More", "Get Started") without context
+- Missing authentic details (pricing, contact info, specifics)
+- Excessive emoji usage in headings, buttons, or throughout content 🚀✨💡
+- Emojis that feel forced or don't match the brand tone
+
+**User Experience Problems:**
+- Feature overload trying to do everything at once
+- Confusing navigation with too many options or unclear labels
+- No clear user journey or call-to-action hierarchy
+- Missing human elements (testimonials, team photos, personal stories)
+- Over-optimization that feels calculated rather than intuitive
+
+If you detect potential AI design patterns, include an "ai_design_assessment" section in your response:
+
+"ai_design_assessment": {
+  "likely_ai_generated": true/false,
+  "confidence": 1-100,
+  "detected_patterns": ["list of specific AI patterns found"],
+  "recommendations": ["specific suggestions to make design more human and authentic"],
+  "human_elements_missing": ["what human touches could improve the design"]
+}
+
 Please analyze the provided screenshots and provide a comprehensive UX critique in the following JSON format:
 
 {
@@ -280,8 +320,17 @@ Please analyze the provided screenshots and provide a comprehensive UX critique 
       "impact": "Expected impact of implementing this change",
       "effort": "Low/Medium/High implementation effort"
     }
-  ]
+  ],
+  "ai_design_assessment": {
+    "likely_ai_generated": true/false,
+    "confidence": 1-100,
+    "detected_patterns": ["list of specific AI patterns found"],
+    "recommendations": ["specific suggestions to make design more human and authentic"],
+    "human_elements_missing": ["what human touches could improve the design"]
+  }
 }
+
+NOTE: The "ai_design_assessment" section is OPTIONAL - only include it if you detect potential AI design patterns. If the design appears authentically human-made, omit this section entirely.
 
 Focus on actionable, specific feedback based on what you can see in the screenshots. Consider modern UX best practices, WCAG guidelines, and current design trends. Be constructive and provide clear next steps.`;
   }
