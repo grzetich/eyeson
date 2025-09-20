@@ -1,6 +1,27 @@
 # UX Analyst AI
 
-An AI-powered UX analysis tool that provides comprehensive website analysis with actionable recommendations and implementation code generation.
+<p align="center">
+  <img src="https://img.shields.io/badge/AI%20Powered-Gemini%201.5-blue?style=for-the-badge&logo=google" alt="AI Powered by Gemini">
+  <img src="https://img.shields.io/badge/Node.js-18+-green?style=for-the-badge&logo=node.js" alt="Node.js">
+  <img src="https://img.shields.io/badge/React-18+-blue?style=for-the-badge&logo=react" alt="React">
+  <img src="https://img.shields.io/badge/CLI-Ready-orange?style=for-the-badge&logo=terminal" alt="CLI Ready">
+  <img src="https://img.shields.io/badge/MCP-Compatible-purple?style=for-the-badge&logo=claude" alt="MCP Compatible">
+</p>
+
+<p align="center">
+  <strong>Transform your website's user experience with AI-powered analysis, actionable insights, and ready-to-implement code solutions.</strong>
+</p>
+
+<p align="center">
+  🎯 <strong>Comprehensive UX Analysis</strong> •
+  💻 <strong>Implementation Code Generation</strong> •
+  🗣️ <strong>Natural Language Interface</strong> •
+  ⚡ <strong>CI/CD Integration</strong>
+</p>
+
+---
+
+**UX Analyst AI** is an intelligent design analysis platform that examines websites across multiple viewports, identifies UX issues, checks accessibility compliance, and generates implementation-ready code to fix problems. With support for web dashboard, command-line interface, and natural language interaction through Claude, it's the complete solution for UX optimization.
 
 ## Features
 
@@ -17,6 +38,13 @@ An AI-powered UX analysis tool that provides comprehensive website analysis with
 - Copy-paste ready code snippets
 - Framework-agnostic solutions
 
+### 🤖 **AI Design Detection**
+- **World's first UX tool with AI design anti-pattern detection**
+- Identifies generic, template-like appearances
+- Flags excessive buzzwords and robotic copy
+- Suggests authentic human elements to improve brand personality
+- Helps avoid the "AI-generated website" look
+
 ### 🚀 **Multiple Interfaces**
 - **Web Interface**: Full-featured dashboard with real-time progress
 - **Command Line Tool**: Perfect for CI/CD integration and automation
@@ -28,6 +56,23 @@ An AI-powered UX analysis tool that provides comprehensive website analysis with
 - Browser pool management for resource efficiency
 - Dependency injection architecture
 - Comprehensive error handling and logging
+
+## ⚡ Quick Demo
+
+```bash
+# Install and analyze any website in 30 seconds
+git clone https://github.com/grzetich/eyeson.git
+cd eyeson/ux-analyst-ai/cli && npm install && npm link
+ux-analyze https://example.com --quick --code --accessibility
+```
+
+**What you get:**
+- 📊 Comprehensive UX score and grading
+- 📱 Multi-viewport screenshots and analysis
+- ♿ Accessibility compliance report
+- 🤖 AI design pattern detection
+- 💻 Ready-to-implement code fixes
+- 📄 Professional HTML/JSON/Markdown reports
 
 ## Tech Stack
 
