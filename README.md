@@ -39,11 +39,10 @@
 - Framework-agnostic solutions
 
 ### 🤖 **AI Design Detection**
-- **World's first UX tool with AI design anti-pattern detection**
 - Identifies generic, template-like appearances
 - Flags excessive buzzwords and robotic copy
 - Suggests authentic human elements to improve brand personality
-- Helps avoid the "AI-generated website" look
+- Helps avoid common AI design pitfalls
 
 ### 🚀 **Multiple Interfaces**
 - **Web Interface**: Full-featured dashboard with real-time progress
