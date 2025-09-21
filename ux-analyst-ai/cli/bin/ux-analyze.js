@@ -634,19 +634,19 @@ function generateHTMLReport(result) {
         </div>
         ` : ''}
 
-        ${implementationCode && (implementationCode.html || implementationCode.css || implementationCode.javascript) ? `
         <div class="section">
             <div class="section-header">
                 <h2>Implementation Code</h2>
             </div>
             <div class="section-content">
+                ${implementationCode && (implementationCode.html?.length > 0 || implementationCode.css?.length > 0 || implementationCode.javascript?.length > 0) ? `
                 <div class="tabs">
-                    ${implementationCode.html ? '<button class="tab-button active" onclick="showTab(\'html\')">HTML</button>' : ''}
-                    ${implementationCode.css ? '<button class="tab-button" onclick="showTab(\'css\')">CSS</button>' : ''}
-                    ${implementationCode.javascript ? '<button class="tab-button" onclick="showTab(\'js\')">JavaScript</button>' : ''}
+                    ${implementationCode.html?.length > 0 ? '<button class="tab-button active" onclick="showTab(\'html\')">HTML</button>' : ''}
+                    ${implementationCode.css?.length > 0 ? '<button class="tab-button" onclick="showTab(\'css\')">CSS</button>' : ''}
+                    ${implementationCode.javascript?.length > 0 ? '<button class="tab-button" onclick="showTab(\'js\')">JavaScript</button>' : ''}
                 </div>
 
-                ${implementationCode.html ? `
+                ${implementationCode.html?.length > 0 ? `
                 <div id="html-tab" class="tab-content active">
                     ${implementationCode.html.map(item => `
                     <div class="code-section">
@@ -658,7 +658,7 @@ function generateHTMLReport(result) {
                 </div>
                 ` : ''}
 
-                ${implementationCode.css ? `
+                ${implementationCode.css?.length > 0 ? `
                 <div id="css-tab" class="tab-content">
                     ${implementationCode.css.map(item => `
                     <div class="code-section">
@@ -670,7 +670,7 @@ function generateHTMLReport(result) {
                 </div>
                 ` : ''}
 
-                ${implementationCode.javascript ? `
+                ${implementationCode.javascript?.length > 0 ? `
                 <div id="js-tab" class="tab-content">
                     ${implementationCode.javascript.map(item => `
                     <div class="code-section">
@@ -681,9 +681,14 @@ function generateHTMLReport(result) {
                     `).join('')}
                 </div>
                 ` : ''}
+                ` : `
+                <div style="text-align: center; padding: 40px; color: #666; font-style: italic;">
+                    <p>No implementation code recommendations generated.</p>
+                    <p style="margin-top: 10px; font-size: 0.9em;">Try running the analysis with the <code>--code</code> flag to generate implementation suggestions.</p>
+                </div>
+                `}
             </div>
         </div>
-        ` : ''}
 
         ${accessibility && accessibility.violations ? `
         <div class="section">
