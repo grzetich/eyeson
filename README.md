@@ -67,11 +67,11 @@ ux-analyze https://example.com --quick --code --accessibility
 
 **What you get:**
 - 📊 Comprehensive UX score and grading
-- 📱 Multi-viewport screenshots and analysis
-- ♿ Accessibility compliance report
-- 🤖 AI design pattern detection
-- 💻 Ready-to-implement code fixes
-- 📄 Professional HTML/JSON/Markdown reports
+- 📱 **Embedded screenshots** across desktop, tablet, and mobile viewports
+- ♿ Accessibility compliance report with WCAG guidelines
+- 🤖 AI design pattern detection and authenticity recommendations
+- 💻 **Syntax-highlighted implementation code** (HTML, CSS, JavaScript)
+- 📄 **Professional HTML reports** with responsive design and interactive elements
 
 ## Tech Stack
 
@@ -370,9 +370,11 @@ Use with: `ux-analyze https://example.com --config ux-config.json`
 - Contains all metrics, scores, and recommendations
 
 ### HTML (Human-readable)
-- Beautiful visual reports with embedded screenshots
-- Implementation code included with syntax highlighting
-- Shareable analysis results
+- **Professional visual reports** with embedded base64 screenshots (all viewports)
+- **Syntax-highlighted implementation code** with HTML/CSS/JavaScript tabs
+- **Responsive design** with gradient headers, cards, and color-coded severity
+- **Interactive elements** including collapsible sections and code tabs
+- **Self-contained files** - no external dependencies, easy sharing
 
 ### Markdown (Documentation-friendly)
 - README-compatible format for documentation
@@ -481,6 +483,12 @@ npm test                   # Run backend tests
    - Check file permissions in `data/screenshots/`
    - Verify `SCREENSHOT_STORAGE_PATH` is correct
    - Ensure sufficient disk space
+   - For HTML reports: Screenshots are embedded as base64, check file sizes
+
+5. **Implementation Code Not Generated**
+   - Ensure `--code` flag is used for CLI analysis
+   - Verify Gemini API key has sufficient quota
+   - Check debug output for code generation service errors
 
 ### Performance Optimization
 
