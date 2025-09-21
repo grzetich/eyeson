@@ -29,6 +29,12 @@ program
   .option('--api-key <key>', 'Gemini API key (or set GEMINI_API_KEY env var)')
   .action(async (url, options) => {
     try {
+      // Validate URL format and security
+      if (!isValidUrl(url)) {
+        console.error(chalk.red('❌ Invalid URL format. Please provide a valid HTTP/HTTPS URL.'));
+        process.exit(1);
+      }
+
       await runAnalysis(url, options);
     } catch (error) {
       console.error(chalk.red('Error:'), error.message);
@@ -414,7 +420,11 @@ function generateHTMLReport(result) {
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>UX Analysis Report - ${result.url}</title>
+    <meta http-equiv="Content-Security-Policy" content="default-src 'self'; style-src 'self' 'unsafe-inline' https://cdnjs.cloudflare.com; script-src 'self' 'unsafe-inline' https://cdnjs.cloudflare.com; font-src 'self' https://cdnjs.cloudflare.com; img-src 'self' data:;">
+    <meta http-equiv="X-Content-Type-Options" content="nosniff">
+    <meta http-equiv="X-Frame-Options" content="DENY">
+    <meta http-equiv="X-XSS-Protection" content="1; mode=block">
+    <title>UX Analysis Report - ${escapeHtml(result.url || '')}</title>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/prism/1.29.0/themes/prism.min.css">
     <style>
         * { margin: 0; padding: 0; box-sizing: border-box; }
@@ -748,6 +758,38 @@ function escapeHtml(text) {
     .replace(/>/g, '&gt;')
     .replace(/"/g, '&quot;')
     .replace(/'/g, '&#39;');
+}
+
+function isValidUrl(string) {
+  try {
+    const url = new URL(string);
+    // Only allow HTTP and HTTPS protocols
+    if (!['http:', 'https:'].includes(url.protocol)) {
+      return false;
+    }
+    // Prevent localhost/private IPs in production
+    const hostname = url.hostname.toLowerCase();
+    const privateIpPatterns = [
+      /^localhost$/,
+      /^127\./,
+      /^192\.168\./,
+      /^10\./,
+      /^172\.(1[6-9]|2[0-9]|3[0-1])\./,
+      /^::1$/,
+      /^fc00:/,
+      /^fe80:/
+    ];
+
+    // Allow private IPs for development
+    if (process.env.NODE_ENV !== 'production') {
+      return true;
+    }
+
+    // Block private IPs in production
+    return !privateIpPatterns.some(pattern => pattern.test(hostname));
+  } catch (error) {
+    return false;
+  }
 }
 
 function generateMarkdownReport(result) {

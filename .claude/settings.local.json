@@ -21,7 +21,8 @@
       "Bash(npm link:*)",
       "Bash(ux-analyze:*)",
       "Bash(git push:*)",
-      "Bash(git pull:*)"
+      "Bash(git pull:*)",
+      "Bash(cat:*)"
     ],
     "deny": [],
     "ask": []
