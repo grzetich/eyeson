@@ -75,9 +75,12 @@ Focus on creating implementable, tested code that directly addresses the UX issu
 
   async generateCodeForRecommendation(prompt) {
     try {
+      this.logger.log('🤖 Sending prompt to Gemini...');
       const result = await this.model.generateContent(prompt);
       const response = await result.response;
       const text = response.text();
+
+      this.logger.log(`📝 Gemini response length: ${text.length} characters`);
 
       // Try to parse JSON response
       let parsedResponse;
@@ -85,14 +88,24 @@ Focus on creating implementable, tested code that directly addresses the UX issu
         // Extract JSON from response if it's wrapped in markdown
         const jsonMatch = text.match(/```json\n([\s\S]*?)\n```/) || text.match(/\{[\s\S]*\}/);
         parsedResponse = JSON.parse(jsonMatch ? jsonMatch[1] || jsonMatch[0] : text);
+        this.logger.log('✅ Parsed JSON response successfully');
       } catch (parseError) {
+        this.logger.log('⚠️ JSON parse failed, extracting manually...');
         // If JSON parsing fails, structure the response manually
+        const html = this.extractCodeBlock(text, 'html');
+        const css = this.extractCodeBlock(text, 'css');
+        const js = this.extractCodeBlock(text, 'javascript') || this.extractCodeBlock(text, 'js');
+
+        this.logger.log(`  HTML code: ${html ? 'found' : 'not found'}`);
+        this.logger.log(`  CSS code: ${css ? 'found' : 'not found'}`);
+        this.logger.log(`  JS code: ${js ? 'found' : 'not found'}`);
+
         parsedResponse = {
           recommendation: "Code Implementation",
           implementation: {
-            html: this.extractCodeBlock(text, 'html'),
-            css: this.extractCodeBlock(text, 'css'),
-            javascript: this.extractCodeBlock(text, 'javascript') || this.extractCodeBlock(text, 'js')
+            html: html,
+            css: css,
+            javascript: js
           },
           instructions: this.extractInstructions(text),
           notes: this.extractNotes(text)
@@ -133,20 +146,40 @@ Focus on creating implementable, tested code that directly addresses the UX issu
       this.logger.log('📦 Creating comprehensive code bundle...');
 
       const allRecommendations = this.extractAllRecommendations(analysisResults);
+      this.logger.log(`🔍 Found ${allRecommendations.length} total recommendations`);
 
       if (allRecommendations.length === 0) {
+        this.logger.log('❌ No recommendations found');
         return {
           success: false,
           error: 'No recommendations found to generate code for'
         };
       }
 
+      // Debug: log all recommendations
+      allRecommendations.forEach((rec, i) => {
+        this.logger.log(`  ${i}: ${rec.title || rec.description} (priority: ${rec.priority})`);
+      });
+
       // Generate code for top priority recommendations
       const priorityRecs = allRecommendations
-        .filter(rec => rec.priority === 'high' || rec.priority === 'medium')
+        .filter(rec => {
+          const priority = rec.priority?.toLowerCase();
+          return priority === 'high' || priority === 'medium';
+        })
         .slice(0, 8); // Limit to avoid API overload
 
+      this.logger.log(`🔍 Filtered to ${priorityRecs.length} priority recommendations`);
+
+      this.logger.log(`🔧 Starting code generation for ${priorityRecs.length} recommendations...`);
       const implementations = await this.generateImplementationCode(priorityRecs, null, websiteUrl);
+
+      this.logger.log(`✅ Code generation completed. Success: ${implementations.success}`);
+      if (implementations.success) {
+        this.logger.log(`  Generated ${implementations.implementations?.length || 0} implementations`);
+      } else {
+        this.logger.log(`  Error: ${implementations.error}`);
+      }
 
       if (!implementations.success) {
         return implementations;

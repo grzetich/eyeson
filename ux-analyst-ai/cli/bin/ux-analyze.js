@@ -104,6 +104,25 @@ async function runAnalysis(url, options) {
     // Save results
     await saveResults(result, analysisOptions);
 
+    // Debug: Log the result structure
+    console.log(chalk.yellow('\n🔍 Debug - Result structure:'));
+    console.log(`Result keys: ${Object.keys(result).join(', ')}`);
+    console.log(`Screenshots: ${result.screenshots ? result.screenshots.length : 0} found`);
+    if (result.screenshots && result.screenshots.length > 0) {
+      console.log(`Screenshot 0 keys: ${Object.keys(result.screenshots[0]).join(', ')}`);
+      console.log(`Screenshot 0 filepath: ${result.screenshots[0].filepath}`);
+    }
+    console.log(`Implementation code: ${result.implementationCode ? 'Present' : 'Missing'}`);
+    if (result.implementationCode) {
+      console.log(`Implementation code keys: ${Object.keys(result.implementationCode).join(', ')}`);
+    }
+    console.log(`Report: ${result.report ? 'Present' : 'Missing'}`);
+    if (result.report) {
+      console.log(`Report keys: ${Object.keys(result.report).join(', ')}`);
+    }
+    console.log(`Accessibility: ${result.accessibility ? 'Present' : 'Missing'}`);
+    console.log(`Results (raw): ${result.results ? Object.keys(result.results).join(', ') : 'Missing'}`);
+
     // Display summary
     displaySummary(result, analysisOptions);
 
@@ -195,6 +214,7 @@ async function loadConfiguration(options) {
     ai: {
       geminiApiKey: options.apiKey || process.env.GEMINI_API_KEY,
       gemini: {
+        apiKey: options.apiKey || process.env.GEMINI_API_KEY,
         model: "gemini-1.5-flash",
         maxRetries: 3,
         baseDelay: 2000,
@@ -212,16 +232,28 @@ async function loadConfiguration(options) {
         desktop: { width: 1920, height: 1080 },
         tablet: { width: 768, height: 1024 },
         mobile: { width: 375, height: 667 }
-      }
+      },
+      timeoutMs: 120000,
+      waitForMs: 10000,
+      maxFileSize: 10485760,
+      retentionDays: 30
     },
     browser: {
       poolSize: 3,
-      headless: true,
+      headless: "new",
+      maxIdleTimeMs: 300000,
+      maxLifetimeMs: 1800000,
       launchArgs: [
         "--no-sandbox",
         "--disable-setuid-sandbox",
         "--disable-dev-shm-usage",
-        "--disable-gpu"
+        "--disable-gpu",
+        "--disable-extensions",
+        "--disable-background-timer-throttling",
+        "--disable-renderer-backgrounding",
+        "--disable-backgrounding-occluded-windows",
+        "--disable-web-security",
+        "--disable-features=VizDisplayCompositor"
       ]
     },
     analysis: {
@@ -249,6 +281,31 @@ async function saveResults(result, options) {
 
   const timestamp = new Date().toISOString().replace(/[:.]/g, '-');
   const baseFilename = `ux-analysis-${timestamp}`;
+
+  // For HTML reports, embed screenshots as base64
+  if (options.outputFormat === 'html' && result.screenshots && result.screenshots.length > 0) {
+    console.log(chalk.cyan('📸 Converting screenshots to base64 for HTML embedding...'));
+
+    for (const screenshot of result.screenshots) {
+      try {
+        // The screenshot object uses 'file_path' not 'filepath'
+        const filePath = screenshot.filepath || screenshot.file_path;
+        console.log(`🔍 Screenshot path: ${filePath}`);
+        console.log(`🔍 Screenshot viewport: ${screenshot.viewport}`);
+
+        if (filePath && await fs.pathExists(filePath)) {
+          const imageBuffer = await fs.readFile(filePath);
+          screenshot.base64 = imageBuffer.toString('base64');
+          screenshot.viewport = screenshot.viewport || screenshot.device;
+          console.log(`✓ Converted ${screenshot.viewport} screenshot`);
+        } else {
+          console.log(`⚠ Screenshot file not found: ${filePath}`);
+        }
+      } catch (error) {
+        console.log(`⚠ Error converting screenshot ${screenshot.device}: ${error.message}`);
+      }
+    }
+  }
 
   switch (options.outputFormat) {
     case 'json':
@@ -346,7 +403,11 @@ function getGradeEmoji(grade) {
 }
 
 function generateHTMLReport(result) {
-  // Simplified HTML report for CLI
+  const screenshots = result.screenshots || [];
+  const accessibility = result.accessibility || {};
+  const report = result.report || {};
+  const implementationCode = result.implementationCode || {};
+
   return `
 <!DOCTYPE html>
 <html lang="en">
@@ -354,28 +415,334 @@ function generateHTMLReport(result) {
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>UX Analysis Report - ${result.url}</title>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/prism/1.29.0/themes/prism.min.css">
     <style>
-        body { font-family: Arial, sans-serif; line-height: 1.6; margin: 40px; }
-        .header { background: #f4f4f4; padding: 20px; margin-bottom: 20px; border-radius: 8px; }
-        .section { margin-bottom: 30px; }
-        .score { font-size: 24px; font-weight: bold; color: #2c5aa0; }
-        pre { background: #f5f5f5; padding: 15px; border-radius: 4px; overflow-x: auto; }
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            line-height: 1.6;
+            color: #333;
+            background: #f8fafc;
+        }
+        .container { max-width: 1200px; margin: 0 auto; padding: 20px; }
+        .header {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            padding: 40px 30px;
+            border-radius: 12px;
+            margin-bottom: 30px;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.1);
+        }
+        .header h1 { font-size: 2.5em; margin-bottom: 10px; font-weight: 300; }
+        .header .url { font-size: 1.1em; opacity: 0.9; margin-bottom: 15px; }
+        .header .meta { display: flex; gap: 30px; flex-wrap: wrap; }
+        .meta-item { background: rgba(255,255,255,0.1); padding: 10px 15px; border-radius: 6px; }
+
+        .summary-cards {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+            gap: 20px;
+            margin-bottom: 40px;
+        }
+        .card {
+            background: white;
+            padding: 25px;
+            border-radius: 12px;
+            box-shadow: 0 4px 15px rgba(0,0,0,0.08);
+            border-left: 4px solid #667eea;
+        }
+        .card h3 { color: #4a5568; margin-bottom: 15px; font-size: 1.1em; }
+        .score { font-size: 2.5em; font-weight: bold; color: #667eea; margin-bottom: 5px; }
+        .grade { font-size: 1.2em; font-weight: 600; }
+        .grade.excellent { color: #48bb78; }
+        .grade.good { color: #38b2ac; }
+        .grade.fair { color: #ed8936; }
+        .grade.poor { color: #e53e3e; }
+
+        .section {
+            background: white;
+            margin-bottom: 30px;
+            border-radius: 12px;
+            overflow: hidden;
+            box-shadow: 0 4px 15px rgba(0,0,0,0.08);
+        }
+        .section-header {
+            background: #f7fafc;
+            padding: 20px 30px;
+            border-bottom: 1px solid #e2e8f0;
+        }
+        .section-header h2 { color: #2d3748; font-size: 1.5em; }
+        .section-content { padding: 30px; }
+
+        .screenshots-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+            gap: 25px;
+        }
+        .screenshot-item {
+            border: 1px solid #e2e8f0;
+            border-radius: 8px;
+            overflow: hidden;
+        }
+        .screenshot-item h4 {
+            background: #f7fafc;
+            padding: 15px;
+            color: #4a5568;
+            text-transform: capitalize;
+        }
+        .screenshot-item img {
+            width: 100%;
+            height: auto;
+            display: block;
+        }
+
+        .issues-list { list-style: none; }
+        .issue-item {
+            padding: 20px;
+            margin-bottom: 15px;
+            border-radius: 8px;
+            border-left: 4px solid #e2e8f0;
+        }
+        .issue-item.high { border-left-color: #e53e3e; background: #fed7d7; }
+        .issue-item.medium { border-left-color: #ed8936; background: #feebc8; }
+        .issue-item.low { border-left-color: #38b2ac; background: #c6f6d5; }
+        .issue-severity {
+            display: inline-block;
+            padding: 4px 8px;
+            border-radius: 4px;
+            font-size: 0.8em;
+            font-weight: bold;
+            text-transform: uppercase;
+        }
+        .severity-high { background: #e53e3e; color: white; }
+        .severity-medium { background: #ed8936; color: white; }
+        .severity-low { background: #38b2ac; color: white; }
+
+        .code-section { margin-bottom: 25px; }
+        .code-header {
+            background: #2d3748;
+            color: white;
+            padding: 10px 15px;
+            font-weight: bold;
+            border-radius: 6px 6px 0 0;
+        }
+        pre[class*="language-"] {
+            margin: 0;
+            border-radius: 0 0 6px 6px;
+        }
+
+        .tabs { border-bottom: 1px solid #e2e8f0; margin-bottom: 20px; }
+        .tab-button {
+            background: none;
+            border: none;
+            padding: 12px 20px;
+            cursor: pointer;
+            border-bottom: 2px solid transparent;
+            font-size: 1em;
+        }
+        .tab-button.active {
+            border-bottom-color: #667eea;
+            color: #667eea;
+            font-weight: 600;
+        }
+        .tab-content { display: none; }
+        .tab-content.active { display: block; }
     </style>
 </head>
 <body>
-    <div class="header">
-        <h1>UX Analysis Report</h1>
-        <p><strong>Website:</strong> ${result.url}</p>
-        <p><strong>Generated:</strong> ${new Date().toLocaleString()}</p>
-        ${result.report?.summary ? `<p><strong>Overall Grade:</strong> ${result.report.summary.overallGrade}</p>` : ''}
+    <div class="container">
+        <div class="header">
+            <h1>UX Analysis Report</h1>
+            <div class="url">${result.url}</div>
+            <div class="meta">
+                <div class="meta-item">
+                    <strong>Generated:</strong> ${new Date().toLocaleString()}
+                </div>
+                <div class="meta-item">
+                    <strong>Analysis ID:</strong> ${result.id || 'N/A'}
+                </div>
+                <div class="meta-item">
+                    <strong>Status:</strong> ${result.status || 'Completed'}
+                </div>
+            </div>
+        </div>
+
+        <div class="summary-cards">
+            ${report.summary ? `
+            <div class="card">
+                <h3>Overall Grade</h3>
+                <div class="grade ${(report.summary.overallGrade || '').toLowerCase()}">${report.summary.overallGrade || 'N/A'}</div>
+            </div>
+            <div class="card">
+                <h3>UX Score</h3>
+                <div class="score">${report.summary.uxScore || 0}</div>
+                <div>out of 100</div>
+            </div>
+            <div class="card">
+                <h3>Total Issues</h3>
+                <div class="score">${report.summary.totalIssues || 0}</div>
+                <div>issues found</div>
+            </div>
+            ` : ''}
+            ${accessibility.score ? `
+            <div class="card">
+                <h3>Accessibility Score</h3>
+                <div class="score">${accessibility.score}</div>
+                <div>out of 100</div>
+            </div>
+            ` : ''}
+        </div>
+
+        ${screenshots.length > 0 ? `
+        <div class="section">
+            <div class="section-header">
+                <h2>Screenshots</h2>
+            </div>
+            <div class="section-content">
+                <div class="screenshots-grid">
+                    ${screenshots.map(screenshot => `
+                    <div class="screenshot-item">
+                        <h4>${screenshot.viewport || screenshot.device || 'Screenshot'}</h4>
+                        <img src="data:image/png;base64,${screenshot.base64 || ''}" alt="${screenshot.viewport} view" onerror="this.style.display='none'">
+                    </div>
+                    `).join('')}
+                </div>
+            </div>
+        </div>
+        ` : ''}
+
+        ${report.issues && report.issues.length > 0 ? `
+        <div class="section">
+            <div class="section-header">
+                <h2>Issues & Recommendations</h2>
+            </div>
+            <div class="section-content">
+                <ul class="issues-list">
+                    ${report.issues.map(issue => `
+                    <li class="issue-item ${(issue.severity || 'medium').toLowerCase()}">
+                        <div style="display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 10px;">
+                            <strong>${issue.description || issue.title || 'Issue'}</strong>
+                            <span class="issue-severity severity-${(issue.severity || 'medium').toLowerCase()}">${issue.severity || 'Medium'}</span>
+                        </div>
+                        <p><strong>Category:</strong> ${issue.category || 'General'}</p>
+                        <p><strong>Recommendation:</strong> ${issue.recommendation || issue.solution || 'No recommendation provided'}</p>
+                        ${issue.location ? `<p><strong>Location:</strong> ${issue.location}</p>` : ''}
+                    </li>
+                    `).join('')}
+                </ul>
+            </div>
+        </div>
+        ` : ''}
+
+        ${implementationCode && (implementationCode.html || implementationCode.css || implementationCode.javascript) ? `
+        <div class="section">
+            <div class="section-header">
+                <h2>Implementation Code</h2>
+            </div>
+            <div class="section-content">
+                <div class="tabs">
+                    ${implementationCode.html ? '<button class="tab-button active" onclick="showTab(\'html\')">HTML</button>' : ''}
+                    ${implementationCode.css ? '<button class="tab-button" onclick="showTab(\'css\')">CSS</button>' : ''}
+                    ${implementationCode.javascript ? '<button class="tab-button" onclick="showTab(\'js\')">JavaScript</button>' : ''}
+                </div>
+
+                ${implementationCode.html ? `
+                <div id="html-tab" class="tab-content active">
+                    ${implementationCode.html.map(item => `
+                    <div class="code-section">
+                        <div class="code-header">${item.title || 'HTML Code'}</div>
+                        <pre><code class="language-html">${escapeHtml(item.code || '')}</code></pre>
+                        ${item.instructions ? `<p style="margin-top: 10px; color: #666;"><strong>Instructions:</strong> ${item.instructions}</p>` : ''}
+                    </div>
+                    `).join('')}
+                </div>
+                ` : ''}
+
+                ${implementationCode.css ? `
+                <div id="css-tab" class="tab-content">
+                    ${implementationCode.css.map(item => `
+                    <div class="code-section">
+                        <div class="code-header">${item.title || 'CSS Code'}</div>
+                        <pre><code class="language-css">${escapeHtml(item.code || '')}</code></pre>
+                        ${item.instructions ? `<p style="margin-top: 10px; color: #666;"><strong>Instructions:</strong> ${item.instructions}</p>` : ''}
+                    </div>
+                    `).join('')}
+                </div>
+                ` : ''}
+
+                ${implementationCode.javascript ? `
+                <div id="js-tab" class="tab-content">
+                    ${implementationCode.javascript.map(item => `
+                    <div class="code-section">
+                        <div class="code-header">${item.title || 'JavaScript Code'}</div>
+                        <pre><code class="language-javascript">${escapeHtml(item.code || '')}</code></pre>
+                        ${item.instructions ? `<p style="margin-top: 10px; color: #666;"><strong>Instructions:</strong> ${item.instructions}</p>` : ''}
+                    </div>
+                    `).join('')}
+                </div>
+                ` : ''}
+            </div>
+        </div>
+        ` : ''}
+
+        ${accessibility && accessibility.violations ? `
+        <div class="section">
+            <div class="section-header">
+                <h2>Accessibility Analysis</h2>
+            </div>
+            <div class="section-content">
+                <p><strong>Score:</strong> ${accessibility.score}/100</p>
+                <p><strong>Total Violations:</strong> ${accessibility.totalViolations || 0}</p>
+                ${accessibility.violations.length > 0 ? `
+                <h4 style="margin-top: 20px;">Violations:</h4>
+                <ul class="issues-list">
+                    ${accessibility.violations.map(violation => `
+                    <li class="issue-item ${violation.impact || 'medium'}">
+                        <strong>${violation.description || violation.help || 'Accessibility Issue'}</strong>
+                        <p><strong>Impact:</strong> ${violation.impact || 'Unknown'}</p>
+                        ${violation.helpUrl ? `<p><a href="${violation.helpUrl}" target="_blank">Learn more</a></p>` : ''}
+                    </li>
+                    `).join('')}
+                </ul>
+                ` : ''}
+            </div>
+        </div>
+        ` : ''}
     </div>
 
-    <div class="section">
-        <h2>Analysis Results</h2>
-        <pre>${JSON.stringify(result, null, 2)}</pre>
-    </div>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/prism/1.29.0/components/prism-core.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/prism/1.29.0/plugins/autoloader/prism-autoloader.min.js"></script>
+    <script>
+        function showTab(tabName) {
+            // Hide all tab contents
+            document.querySelectorAll('.tab-content').forEach(tab => {
+                tab.classList.remove('active');
+            });
+
+            // Remove active class from all buttons
+            document.querySelectorAll('.tab-button').forEach(button => {
+                button.classList.remove('active');
+            });
+
+            // Show selected tab and activate button
+            document.getElementById(tabName + '-tab').classList.add('active');
+            event.target.classList.add('active');
+        }
+
+        // Initialize syntax highlighting
+        Prism.highlightAll();
+    </script>
 </body>
 </html>`;
+}
+
+function escapeHtml(text) {
+  return text
+    .replace(/&/g, '&amp;')
+    .replace(/</g, '&lt;')
+    .replace(/>/g, '&gt;')
+    .replace(/"/g, '&quot;')
+    .replace(/'/g, '&#39;');
 }
 
 function generateMarkdownReport(result) {

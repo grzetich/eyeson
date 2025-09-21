@@ -96,11 +96,16 @@ class VisualDesignAnalyzer {
       const smallImage = await image.resize(100, 100).raw().toBuffer();
       const colors = new Map();
 
+      // Ensure we have a valid buffer
+      if (!smallImage || smallImage.length === 0) {
+        return [];
+      }
+
       // Sample every 4th pixel for performance
-      for (let i = 0; i < smallImage.length; i += 12) {
-        const r = smallImage[i];
-        const g = smallImage[i + 1];
-        const b = smallImage[i + 2];
+      for (let i = 0; i < smallImage.length - 2; i += 12) {
+        const r = smallImage[i] || 0;
+        const g = smallImage[i + 1] || 0;
+        const b = smallImage[i + 2] || 0;
 
         // Group similar colors
         const colorKey = `${Math.floor(r/32)*32},${Math.floor(g/32)*32},${Math.floor(b/32)*32}`;
@@ -108,7 +113,8 @@ class VisualDesignAnalyzer {
       }
 
       // Return top 5 colors
-      return Array.from(colors.entries())
+      const entries = Array.from(colors.entries() || []);
+      return entries
         .sort(([,a], [,b]) => b - a)
         .slice(0, 5)
         .map(([color, count]) => {
